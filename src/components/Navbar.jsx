@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Check for saved theme preference on mount
   useEffect(() => {
@@ -15,11 +17,23 @@ function Navbar() {
     }
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (isProfileOpen && !e.target.closest('.profile-dropdown')) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isProfileOpen]);
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const toggleProfile = () => {
+  const toggleProfile = (e) => {
+    e.stopPropagation();
     setIsProfileOpen(!isProfileOpen);
   };
 
@@ -36,59 +50,83 @@ function Navbar() {
     }
   };
 
-  const navigate = useNavigate();
   const handleLogout = () => {
-    console.log('to logout');
     navigate('/loggedout');
+    setIsProfileOpen(false);
+  };
+
+  const isActive = (path) => {
+    return location.pathname === path ? 'active' : '';
   };
 
   return (
     <nav className="navbar">
       <div className="navbar-container">
         {/* Logo */}
-        <div className="navbar-logo">
+        <Link to="/admin/dashboard" className="navbar-logo">
           <div className="logo-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
             </svg>
           </div>
           <span className="logo-text">F-Pass</span>
-        </div>
+        </Link>
 
         {/* Desktop Navigation Links */}
         <div className={`navbar-links ${isMenuOpen ? 'active' : ''}`}>
-          <a href="/admin/dashboard" className="nav-link" title="Overview">
+          <Link 
+            to="/admin/dashboard" 
+            className={`nav-link ${isActive('/admin/dashboard')}`}
+            title="Overview"
+            onClick={() => setIsMenuOpen(false)}
+          >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M21 12H3M21 12l-4-4M21 12l-4 4" />
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
             <span>Overview</span>
-          </a>
-          <a href="/admin/dashboard/transactions" className="nav-link" title="Transactions">
+          </Link>
+          <Link 
+            to="/admin/dashboard/transactions" 
+            className={`nav-link ${isActive('/admin/dashboard/transactions')}`}
+            title="Transactions"
+            onClick={() => setIsMenuOpen(false)}
+          >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M3 3h18v18H3zM3 9h18M9 21V9" />
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
             </svg>
             <span>Transactions</span>
-          </a>
-          <a href="/admin/dashboard/users" className="nav-link" title="Users">
+          </Link>
+          <Link 
+            to="/admin/dashboard/users" 
+            className={`nav-link ${isActive('/admin/dashboard/users')}`}
+            title="Users"
+            onClick={() => setIsMenuOpen(false)}
+          >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
             <span>Users</span>
-          </a>
-          <a href="/admin/dashboard/wallets" className="nav-link" title="Wallets">
+          </Link>
+          <Link 
+            to="/admin/dashboard/wallets" 
+            className={`nav-link ${isActive('/admin/dashboard/wallets')}`}
+            title="Wallets"
+            onClick={() => setIsMenuOpen(false)}
+          >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+              <line x1="1" y1="10" x2="23" y2="10" />
             </svg>
             <span>Wallets</span>
-          </a>
+          </Link>
         </div>
 
         {/* Right Side Actions */}
         <div className="navbar-actions">
-
           {/* Notifications */}
           <button className="icon-button" aria-label="Notifications" title="Notifications">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -120,13 +158,17 @@ function Navbar() {
                   </div>
                 </div>
                 <div className="dropdown-divider"></div>
-                <a href="/admin/profile" className="dropdown-item">
+                <Link 
+                  to="/admin/profile" 
+                  className="dropdown-item"
+                  onClick={() => setIsProfileOpen(false)}
+                >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                   </svg>
                   <span>My Profile</span>
-                </a>
+                </Link>
                 <div className="dropdown-divider"></div>
                 {/* Dark Mode Toggle in Dropdown */}
                 <button className="dropdown-item dropdown-dark-mode" onClick={toggleDarkMode}>
@@ -155,7 +197,7 @@ function Navbar() {
                   )}
                 </button>
                 <div className="dropdown-divider"></div>
-                <a href="/loggedout" className="dropdown-item logout">
+                <a onClick={handleLogout} className="dropdown-item logout">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
                   </svg>
