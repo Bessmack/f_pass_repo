@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Navbar from '../components/Navbar';
 
-function Profile() {
+export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
     firstName: 'John',
@@ -264,5 +264,3 @@ function Profile() {
     </>
   );
 }
-
-export default Profile;

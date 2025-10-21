@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import UserDashNavbar from '../components/UserDashNavbar';
 
 function UserDashboard() {
   const [balance] = useState('$1,250.50');
@@ -32,6 +33,8 @@ function UserDashboard() {
   ];
 
   return (
+    <>
+    <UserDashNavbar/>
     <div style={styles.container}>
       {/* Balance Card */}
       <div style={styles.balanceCard}>
@@ -112,6 +115,7 @@ function UserDashboard() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
