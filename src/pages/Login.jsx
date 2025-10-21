@@ -1,22 +1,26 @@
 import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import Foot from '../components/Footer';
+import { useNavigate } from 'react-router-dom';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [userRole, setUserRole] = useState('user'); // 'user' or 'admin'
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Login attempt:', { email, password, rememberMe });
-    // Add your login logic here
-    navigate('/admin/dashboard');
+    console.log('Login attempt:', { email, password, rememberMe, userRole });
+    
+    // Route based on user role
+    if (userRole === 'admin') {
+      navigate('/admin/dashboard');
+    } else {
+      navigate('/user/dashboard');
+    }
   };
-  const navigate = useNavigate();
 
   return (
-    <>
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
@@ -27,6 +31,38 @@ function Login() {
           </div>
           <h1>Welcome Back</h1>
           <p>Sign in to manage your transfers</p>
+        </div>
+
+        {/* Role Selection */}
+        <div style={styles.roleSelector}>
+          <button
+            type="button"
+            style={{
+              ...styles.roleBtn,
+              ...(userRole === 'user' ? styles.roleBtnActive : {})
+            }}
+            onClick={() => setUserRole('user')}
+          >
+            <span style={styles.roleIcon}>👤</span>
+            <div>
+              <div style={styles.roleTitle}>User</div>
+              <div style={styles.roleDesc}>Personal Account</div>
+            </div>
+          </button>
+          <button
+            type="button"
+            style={{
+              ...styles.roleBtn,
+              ...(userRole === 'admin' ? styles.roleBtnActive : {})
+            }}
+            onClick={() => setUserRole('admin')}
+          >
+            <span style={styles.roleIcon}>⚡</span>
+            <div>
+              <div style={styles.roleTitle}>Admin</div>
+              <div style={styles.roleDesc}>Management Portal</div>
+            </div>
+          </button>
         </div>
 
         <div className="login-form">
@@ -79,7 +115,7 @@ function Login() {
           </div>
 
           <button type="button" className="login-button" onClick={handleSubmit}>
-            Sign In
+            Sign In as {userRole === 'admin' ? 'Admin' : 'User'}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
@@ -98,8 +134,47 @@ function Login() {
         </div>
       </div>
     </div>
-    </>
   );
 }
+
+const styles = {
+  roleSelector: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '12px',
+    marginBottom: '24px'
+  },
+  roleBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '16px',
+    background: '#f7fafc',
+    border: '2px solid #e2e8f0',
+    borderRadius: '12px',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    textAlign: 'left'
+  },
+  roleBtnActive: {
+    background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+    borderColor: '#667eea',
+    boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)'
+  },
+  roleIcon: {
+    fontSize: '28px',
+    display: 'block'
+  },
+  roleTitle: {
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#1a202c',
+    marginBottom: '2px'
+  },
+  roleDesc: {
+    fontSize: '12px',
+    color: '#718096'
+  }
+};
 
 export default Login;

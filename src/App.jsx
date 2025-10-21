@@ -8,6 +8,11 @@ import AdminUsers from './components/AdminUsers';
 import AdminWallets from './components/AdminWallets';
 import Profile from './pages/Profile';
 
+import UserDashboard from './pages/UserDashboard';
+import UserSendMoney from './pages/UserSendMoney';
+import UserTransactions from './pages/UserTransactions';
+import UserProfile from './pages/UserProfile';
+
 function App() {
 
   return (
@@ -21,6 +26,11 @@ function App() {
           <Route path="/admin/dashboard/users" element={<AdminUsers />} />
           <Route path="/admin/dashboard/wallets" element={<AdminWallets />} />
           <Route path="/admin/profile" element={<Profile />} />
+
+          <Route path="/user/dashboard" element={<UserDashboard />} />
+          <Route path="/user/send-money" element={<UserSendMoney />} />
+          <Route path="/user/transactions" element={<UserTransactions />} />
+          <Route path="/user/profile" element={<UserProfile />} />
         </Routes>
       </Router>
     </>
