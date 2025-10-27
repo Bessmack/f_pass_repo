@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 
-function UserDashNavbar() {
+function UserTopNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -52,7 +52,7 @@ function UserDashNavbar() {
   };
 
   return (
-    <nav className="navbar">
+    <nav className="navbarhome">
       <div className="navbar-container">
         <Link to="/user/dashboard" className="navbar-logo">
           <div className="logo-icon">
@@ -82,7 +82,7 @@ function UserDashNavbar() {
             </button>
 
             {isProfileOpen && (
-              <div className="dropdown-menu">
+              <div className="dropdown-menu" style={{ zIndex: 1001 }}>
                 <div className="dropdown-header">
                   <div className="profile-avatar-large">
                     <span>JD</span>
@@ -157,4 +157,4 @@ function UserDashNavbar() {
   );
 }
 
-export default UserDashNavbar;
+export default UserTopNavbar;

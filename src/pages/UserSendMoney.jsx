@@ -1,491 +1,528 @@
-import { useState } from 'react';
-import UserNavbar from '../components/UserNavbar';
+import React, { useState, useEffect } from "react";
+import { FaSearch, FaPaperPlane, FaTimes, FaCheckCircle, FaArrowLeft } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
-function UserSendMoney() {
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
-    recipient: '',
-    amount: '',
-    note: ''
-  });
+const SendMoney = () => {
+  const [search, setSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+  const [hoveredPreset, setHoveredPreset] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
+  const navigate = useNavigate();
 
-  const recentContacts = [
-    { id: 1, name: 'Alice Cooper', email: 'alice@example.com', avatar: '👩' },
-    { id: 2, name: 'Bob Martin', email: 'bob@example.com', avatar: '👨' },
-    { id: 3, name: 'Carol White', email: 'carol@example.com', avatar: '👩' }
+  const presetAmounts = [10, 25, 50, 100, 250, 500];
+  const transactionChargeRate = 0.015; // 1.5%
+  const walletBalance = 1200; // Example wallet balance
+
+  const beneficiaries = [
+    { id: 1, name: "Jane Smith", tag: "@janesmith" },
+    { id: 2, name: "John Doe", tag: "@johndoe" },
+    { id: 3, name: "Emily Carter", tag: "@emilyc" },
+    { id: 4, name: "Michael Brown", tag: "@mikebrown" },
   ];
 
-  const handleSelectContact = (contact) => {
-    setFormData({ ...formData, recipient: contact.email });
-    setStep(2);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setStep(3);
-    // Add your send money logic here
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  return (
-    <>
-      <UserNavbar />
-      <div style={styles.container}>
-        <div style={styles.content}>
-          <h1 style={styles.title}>Send Money</h1>
-          <p style={styles.subtitle}>Transfer funds quickly and securely</p>
-
-          {/* Progress Steps */}
-          <div style={styles.progressBar}>
-            <div style={{...styles.step, ...(step >= 1 ? styles.stepActive : {})}}>
-              <div style={styles.stepNumber}>1</div>
-              <span style={styles.stepLabel}>Recipient</span>
-            </div>
-            <div style={styles.progressLine}></div>
-            <div style={{...styles.step, ...(step >= 2 ? styles.stepActive : {})}}>
-              <div style={styles.stepNumber}>2</div>
-              <span style={styles.stepLabel}>Amount</span>
-            </div>
-            <div style={styles.progressLine}></div>
-            <div style={{...styles.step, ...(step >= 3 ? styles.stepActive : {})}}>
-              <div style={styles.stepNumber}>3</div>
-              <span style={styles.stepLabel}>Confirm</span>
-            </div>
-          </div>
-
-          {/* Step 1: Select Recipient */}
-          {step === 1 && (
-            <div style={styles.stepContent}>
-              <h2 style={styles.stepTitle}>Select Recipient</h2>
-              
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Email or Phone</label>
-                <input
-                  type="text"
-                  name="recipient"
-                  value={formData.recipient}
-                  onChange={handleChange}
-                  placeholder="Enter recipient's email or phone"
-                  style={styles.input}
-                />
-              </div>
-
-              <div style={styles.recentContacts}>
-                <h3 style={styles.sectionLabel}>Recent Contacts</h3>
-                {recentContacts.map(contact => (
-                  <div
-                    key={contact.id}
-                    style={styles.contactItem}
-                    onClick={() => handleSelectContact(contact)}
-                  >
-                    <div style={styles.contactAvatar}>{contact.avatar}</div>
-                    <div style={styles.contactInfo}>
-                      <h4 style={styles.contactName}>{contact.name}</h4>
-                      <p style={styles.contactEmail}>{contact.email}</p>
-                    </div>
-                    <svg style={styles.arrowIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path d="M9 18l6-6-6-6" />
-                    </svg>
-                  </div>
-                ))}
-              </div>
-
-              {formData.recipient && (
-                <button style={styles.primaryBtn} onClick={() => setStep(2)}>
-                  Continue
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Step 2: Enter Amount */}
-          {step === 2 && (
-            <div style={styles.stepContent}>
-              <h2 style={styles.stepTitle}>Enter Amount</h2>
-              
-              <div style={styles.amountCard}>
-                <div style={styles.currencySymbol}>$</div>
-                <input
-                  type="number"
-                  name="amount"
-                  value={formData.amount}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                  style={styles.amountInput}
-                />
-              </div>
-
-              <div style={styles.quickAmounts}>
-                {['10', '50', '100', '500'].map(amt => (
-                  <button
-                    key={amt}
-                    style={styles.quickAmountBtn}
-                    onClick={() => setFormData({ ...formData, amount: amt })}
-                  >
-                    ${amt}
-                  </button>
-                ))}
-              </div>
-
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Note (Optional)</label>
-                <textarea
-                  name="note"
-                  value={formData.note}
-                  onChange={handleChange}
-                  placeholder="Add a note..."
-                  style={styles.textarea}
-                  rows="3"
-                />
-              </div>
-
-              <div style={styles.buttonGroup}>
-                <button style={styles.secondaryBtn} onClick={() => setStep(1)}>
-                  Back
-                </button>
-                <button
-                  style={styles.primaryBtn}
-                  onClick={handleSubmit}
-                  disabled={!formData.amount}
-                >
-                  Review Transfer
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Confirmation */}
-          {step === 3 && (
-            <div style={styles.stepContent}>
-              <div style={styles.successIcon}>✓</div>
-              <h2 style={styles.successTitle}>Transfer Successful!</h2>
-              <p style={styles.successMessage}>
-                ${formData.amount} has been sent to {formData.recipient}
-              </p>
-
-              <div style={styles.summaryCard}>
-                <div style={styles.summaryRow}>
-                  <span style={styles.summaryLabel}>Amount Sent:</span>
-                  <span style={styles.summaryValue}>${formData.amount}</span>
-                </div>
-                <div style={styles.summaryRow}>
-                  <span style={styles.summaryLabel}>Fee:</span>
-                  <span style={styles.summaryValue}>$0.00</span>
-                </div>
-                <div style={{...styles.summaryRow, ...styles.summaryTotal}}>
-                  <span style={styles.summaryLabel}>Total:</span>
-                  <span style={styles.summaryValue}>${formData.amount}</span>
-                </div>
-              </div>
-
-              <div style={styles.buttonGroup}>
-                <button style={styles.secondaryBtn} onClick={() => window.location.href = '/user/transactions'}>
-                  View Receipt
-                </button>
-                <button
-                  style={styles.primaryBtn}
-                  onClick={() => {
-                    setStep(1);
-                    setFormData({ recipient: '', amount: '', note: '' });
-                  }}
-                >
-                  Send Again
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+  const filtered = beneficiaries.filter(
+    (b) =>
+      b.name.toLowerCase().includes(search.toLowerCase()) ||
+      b.tag.toLowerCase().includes(search.toLowerCase())
   );
-}
 
-const styles = {
-  container: {
-    minHeight: 'calc(100vh - 70px)',
-    background: '#f7fafc',
-    padding: '40px 24px'
-  },
-  content: {
-    maxWidth: '800px',
-    margin: '0 auto'
-  },
-  title: {
-    fontSize: '32px',
-    fontWeight: '700',
-    color: '#1a202c',
-    margin: '0 0 8px 0',
-    textAlign: 'center'
-  },
-  subtitle: {
-    fontSize: '16px',
-    color: '#718096',
-    textAlign: 'center',
-    marginBottom: '40px'
-  },
-  progressBar: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: '40px'
-  },
-  step: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '8px'
-  },
-  stepActive: {
-    opacity: 1
-  },
-  stepNumber: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '50%',
-    background: '#e2e8f0',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: '600',
-    color: '#718096'
-  },
-  stepLabel: {
-    fontSize: '12px',
-    color: '#718096',
-    fontWeight: '500'
-  },
-  progressLine: {
-    width: '80px',
-    height: '2px',
-    background: '#e2e8f0',
-    margin: '0 16px'
-  },
-  stepContent: {
-    background: 'white',
-    borderRadius: '20px',
-    padding: '40px',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)'
-  },
-  stepTitle: {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#1a202c',
-    marginBottom: '24px'
-  },
-  inputGroup: {
-    marginBottom: '24px'
-  },
-  label: {
-    display: 'block',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#4a5568',
-    marginBottom: '8px'
-  },
-  input: {
-    width: '100%',
-    padding: '14px 16px',
-    fontSize: '15px',
-    border: '2px solid #e2e8f0',
-    borderRadius: '12px',
-    outline: 'none',
-    transition: 'all 0.3s ease',
-    background: '#f7fafc',
-    boxSizing: 'border-box'
-  },
-  recentContacts: {
-    marginTop: '32px',
-    marginBottom: '24px'
-  },
-  sectionLabel: {
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#1a202c',
-    marginBottom: '16px'
-  },
-  contactItem: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '16px',
-    background: '#f7fafc',
-    borderRadius: '12px',
-    marginBottom: '12px',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    border: '1px solid transparent'
-  },
-  contactAvatar: {
-    width: '48px',
-    height: '48px',
-    borderRadius: '12px',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '24px',
-    marginRight: '16px'
-  },
-  contactInfo: {
-    flex: 1
-  },
-  contactName: {
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#1a202c',
-    margin: '0 0 4px 0'
-  },
-  contactEmail: {
-    fontSize: '14px',
-    color: '#718096',
-    margin: 0
-  },
-  arrowIcon: {
-    width: '20px',
-    height: '20px',
-    color: '#cbd5e0',
-    strokeWidth: 2
-  },
-  amountCard: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '40px',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    borderRadius: '20px',
-    marginBottom: '24px',
-    gap: '16px'
-  },
-  currencySymbol: {
-    fontSize: '48px',
-    fontWeight: '700',
-    color: 'white'
-  },
-  amountInput: {
-    width: '300px',
-    fontSize: '48px',
-    fontWeight: '700',
-    color: 'white',
-    background: 'transparent',
-    border: 'none',
-    outline: 'none',
-    textAlign: 'center'
-  },
-  quickAmounts: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '12px',
-    marginBottom: '24px'
-  },
-  quickAmountBtn: {
-    padding: '12px',
-    background: '#f7fafc',
-    border: '2px solid #e2e8f0',
-    borderRadius: '12px',
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#4a5568',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease'
-  },
-  textarea: {
-    width: '100%',
-    padding: '14px 16px',
-    fontSize: '15px',
-    border: '2px solid #e2e8f0',
-    borderRadius: '12px',
-    outline: 'none',
-    transition: 'all 0.3s ease',
-    background: '#f7fafc',
-    fontFamily: 'inherit',
-    resize: 'vertical',
-    boxSizing: 'border-box'
-  },
-  buttonGroup: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '16px'
-  },
-  primaryBtn: {
-    padding: '16px 32px',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '12px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
-  },
-  secondaryBtn: {
-    padding: '16px 32px',
-    background: 'white',
-    color: '#4a5568',
-    border: '2px solid #e2e8f0',
-    borderRadius: '12px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease'
-  },
-  successIcon: {
-    width: '80px',
-    height: '80px',
-    margin: '0 auto 24px',
-    background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '48px',
-    color: 'white',
-    fontWeight: 'bold'
-  },
-  successTitle: {
-    fontSize: '28px',
-    fontWeight: '700',
-    color: '#1a202c',
-    textAlign: 'center',
-    marginBottom: '12px'
-  },
-  successMessage: {
-    fontSize: '16px',
-    color: '#718096',
-    textAlign: 'center',
-    marginBottom: '32px'
-  },
-  summaryCard: {
-    background: '#f7fafc',
-    borderRadius: '16px',
-    padding: '24px',
-    marginBottom: '24px'
-  },
-  summaryRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '12px 0',
-    borderBottom: '1px solid #e2e8f0'
-  },
-  summaryTotal: {
-    borderBottom: 'none',
-    paddingTop: '16px',
-    marginTop: '8px',
-    borderTop: '2px solid #cbd5e0'
-  },
-  summaryLabel: {
-    fontSize: '15px',
-    color: '#4a5568',
-    fontWeight: '500'
-  },
-  summaryValue: {
-    fontSize: '15px',
-    color: '#1a202c',
-    fontWeight: '600'
-  }
+  const handleSendClick = (user) => {
+    setSelectedUser(user);
+    setShowModal(true);
+  };
+
+  const totalCharge = amount ? Math.round(amount * transactionChargeRate * 100) / 100 : 0;
+  const totalPayable = amount ? parseFloat(amount) + totalCharge : 0;
+
+  const confirmSend = () => setConfirming(true);
+
+  const finalizeSend = () => {
+  if (!amount) return;
+  setLoading(true);
+  setTimeout(() => {
+    setLoading(false);
+    setConfirming(false);
+    setShowModal(false);
+    setToast({
+      type: "success",
+      message: (
+        <>
+          <FaCheckCircle size={20} color="white" style={{ marginRight: "8px" }} />
+          Sent ${amount} to {selectedUser?.name}
+          {note && ` (${note})`}
+        </>
+      ),
+    });
+    setAmount("");
+    setNote("");
+    setSelectedUser(null);
+  }, 1200);
 };
 
-export default UserSendMoney;
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const styles = {
+    container: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      minHeight: "100vh",
+      background: "linear-gradient(135deg, #e2e8f0 0%, #f8fafc 40%, #dbeafe 100%)",
+      fontFamily: "Inter, sans-serif",
+      paddingBottom: "40px",
+      gap: "25px",
+    },
+    header: {
+      width: "100%",
+      background: "#2563eb",
+      color: "#fff",
+      padding: "30px 0 20px 0",
+      textAlign: "left",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+      zIndex: 10,
+    },
+    headerContent: {
+      width: "90%",
+      maxWidth: "900px",
+      margin: "0 auto",
+      display: "flex",
+      flexDirection: "column",
+      gap: "12px",
+    },
+    headerTop: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: "10px",
+    },
+    searchBarBelow: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    marginTop: "12px",
+    width: "100%",
+    maxWidth: "400px",
+  },
+  searchIconBelow: {
+    position: "absolute",
+    left: "12px",
+    color: "#1e40af",
+  },
+  searchInputBelow: {
+    padding: "10px 12px 10px 36px",
+    borderRadius: "12px",
+    border: "none",
+    fontSize: "1rem",
+    outline: "none",
+    width: "100%",
+    background: "white",
+    color: "#1e293b",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+  },
+    headerTitle: { fontSize: "1.8rem", fontWeight: 700 },
+    searchBar: { position: "relative", display: "flex", alignItems: "center" },
+    searchIcon: { position: "absolute", left: "12px", color: "#1e40af" },
+    searchInput: {
+      padding: "10px 12px 10px 36px",
+      borderRadius: "12px",
+      border: "none",
+      fontSize: "1rem",
+      outline: "none",
+      width: "220px",
+      background: "white",
+      color: "#1e293b",
+    },
+    walletBalance: {
+      fontSize: "1rem",
+      opacity: 0.9,
+      marginTop: "5px",
+      fontWeight: 500,
+    },
+    headerSubtext: { fontSize: "1rem", opacity: 0.9 },
+    listContainer: {
+      width: "90%",
+      maxWidth: "700px",
+      display: "flex",
+      flexDirection: "column",
+      gap: "14px",
+      marginTop: "20px",
+    },
+    card: {
+      background: "rgba(255, 255, 255, 0.9)",
+      backdropFilter: "blur(8px)",
+      borderRadius: "16px",
+      boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
+      padding: "18px 22px",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      transition: "all 0.3s ease",
+      cursor: "pointer",
+    },
+    cardHover: {
+      transform: "translateY(-3px)",
+      boxShadow: "0 8px 20px rgba(37,99,235,0.2)",
+    },
+    userInfo: { display: "flex", flexDirection: "column", color: "#1e293b" },
+    sendBtn: {
+      background: "#2563eb",
+      color: "#fff",
+      border: "none",
+      borderRadius: "10px",
+      padding: "10px 14px",
+      cursor: "pointer",
+      transition: "all 0.25s ease",
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      fontWeight: 500,
+    },
+    sendBtnHover: {
+      background: "#1d4ed8",
+      transform: "translateY(-2px)",
+      boxShadow: "0 4px 14px rgba(37,99,235,0.4)",
+    },
+    modalOverlay: {
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      background: "rgba(0,0,0,0.4)",
+      backdropFilter: "blur(5px)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 100,
+    },
+    modal: {
+      background: "white",
+      borderRadius: "18px",
+      padding: "28px",
+      width: "90%",
+      maxWidth: "380px",
+      textAlign: "center",
+      boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+    },
+    modalTitle: {
+      color: "#1e3a8a",
+      fontSize: "1.3rem",
+      fontWeight: 700,
+      marginBottom: "15px",
+    },
+    presets: {
+      display: "flex",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      gap: "10px",
+      marginBottom: "18px",
+    },
+    presetBtn: (active, hovered) => ({
+      padding: "10px 18px",
+      borderRadius: "10px",
+      border: "1px solid #cbd5e0",
+      background: active
+        ? "#2563eb"
+        : hovered
+        ? "#3b82f6"
+        : "#f1f5f9",
+      color: active || hovered ? "#fff" : "#1e293b",
+      fontWeight: 500,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      boxShadow: active
+        ? "0 4px 12px rgba(37,99,235,0.4)"
+        : hovered
+        ? "0 4px 10px rgba(59,130,246,0.25)"
+        : "none",
+      transform: hovered ? "translateY(-3px)" : "translateY(0)",
+    }),
+    inputWrapper: { position: "relative", width: "100%", marginBottom: "12px" },
+    currencySymbol: {
+      position: "absolute",
+      top: "50%",
+      left: "12px",
+      transform: "translateY(-50%)",
+      color: "#475569",
+      fontWeight: 600,
+    },
+    input: {
+      width: "100%",
+      padding: "12px 12px 12px 30px",
+      borderRadius: "10px",
+      border: "1px solid #cbd5e0",
+      outline: "none",
+      textAlign: "center",
+    },
+    textarea: {
+      width: "100%",
+      padding: "12px",
+      borderRadius: "10px",
+      border: "1px solid #cbd5e0",
+      outline: "none",
+      minHeight: "70px",
+      resize: "none",
+    },
+    infoBox: {
+      background: "#f8fafc",
+      border: "1px solid #e2e8f0",
+      borderRadius: "10px",
+      padding: "10px",
+      fontSize: "0.9rem",
+      color: "#1e293b",
+      textAlign: "left",
+      marginBottom: "12px",
+    },
+    summaryCard: {
+      background: "#f8fafc",
+      border: "1px solid #e2e8f0",
+      borderRadius: "12px",
+      padding: "12px",
+      marginTop: "15px",
+      fontSize: "0.95rem",
+      textAlign: "left",
+      color: "#1e293b",
+    },
+    modalBtns: {
+      display: "flex",
+      justifyContent: "space-between",
+      gap: "10px",
+      marginTop: "20px",
+    },
+    confirmBtn: {
+      flex: 1,
+      background: "#2563eb",
+      color: "#fff",
+      border: "none",
+      padding: "12px 0",
+      borderRadius: "10px",
+      fontWeight: 600,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+    },
+    cancelBtn: {
+      flex: 1,
+      background: "#e2e8f0",
+      color: "#1e293b",
+      border: "none",
+      padding: "12px 0",
+      borderRadius: "10px",
+      fontWeight: 600,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+    },
+    toast: {
+    position: "fixed",
+    bottom: "25px",
+    right: "25px",
+    background: "#2563eb",
+    color: "white",
+    padding: "14px 20px",
+    borderRadius: "12px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+    display: "flex",
+    alignItems: "center",
+    animation: "slideInRight 0.4s ease, fadeOut 0.5s ease 3s forwards",
+    zIndex: 200,
+    fontWeight: 500,
+    },
+    headerTitleWrapper: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    },
+
+    backBtn: {
+    background: "rgba(255,255,255,0.15)",
+    border: "none",
+    borderRadius: "20px",
+    padding: "10px 10px",
+    cursor: "pointer",
+    transition: "all 0.25s ease",
+    },
+    backBtnHover: {
+    background: "rgba(255,255,255,0.25)",
+    transform: "translateX(-2px)",
+    },
+  };
+
+  const styleSheet = document.styleSheets[0];
+if (styleSheet) {
+  const slideIn = `
+    @keyframes slideInRight {
+      0% { transform: translateX(100%); opacity: 0; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+  `;
+  const fadeOut = `
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(20px); }
+    }
+  `;
+  if (![...styleSheet.cssRules].some(r => r.name === "slideInRight")) {
+    styleSheet.insertRule(slideIn, styleSheet.cssRules.length);
+    styleSheet.insertRule(fadeOut, styleSheet.cssRules.length);
+  }
+}
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <div style={styles.headerContent}>
+          <div style={styles.headerTop}>
+            <div style={styles.headerTitleWrapper}>
+              <button
+                style={styles.backBtn}
+                onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.backBtnHover)}
+                onMouseLeave={(e) => Object.assign(e.currentTarget.style, styles.backBtn)}
+                onClick={() => navigate(-1)}
+              >
+                <FaArrowLeft size={16} color="white" />
+              </button>
+              <h2 style={styles.headerTitle}>Send Money</h2>
+            </div>
+
+            <div style={styles.searchBarBelow}>
+              <FaSearch style={styles.searchIconBelow} />
+              <input
+                style={styles.searchInputBelow}
+                type="text"
+                placeholder="Search beneficiary..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+          <p style={styles.walletBalance}>Wallet Balance: ${walletBalance.toLocaleString()} available</p>
+          <p style={styles.headerSubtext}>
+            Choose a beneficiary and send them money instantly.
+          </p>
+        </div>
+      </div>
+
+      <div style={styles.listContainer}>
+        {filtered.map((user) => (
+          <div
+            key={user.id}
+            style={styles.card}
+            onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.cardHover)}
+            onMouseLeave={(e) =>
+              Object.assign(e.currentTarget.style, { transform: "", boxShadow: styles.card.boxShadow })
+            }
+          >
+            <div style={styles.userInfo}>
+              <strong>{user.name}</strong>
+              <span style={{ color: "#475569", fontSize: "0.9rem" }}>{user.tag}</span>
+            </div>
+            <button
+              style={styles.sendBtn}
+              onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.sendBtnHover)}
+              onMouseLeave={(e) => Object.assign(e.currentTarget.style, styles.sendBtn)}
+              onClick={() => handleSendClick(user)}
+            >
+              <FaPaperPlane /> Send
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {showModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <h3 style={styles.modalTitle}>Send to {selectedUser?.name}</h3>
+
+            {!confirming ? (
+              <>
+                <div style={styles.infoBox}>
+                  <p><strong>Wallet Balance:</strong> ${walletBalance.toLocaleString()}</p>
+                  <p><strong>Transaction Fee:</strong> {transactionChargeRate * 100}% (${totalCharge.toLocaleString()})</p>
+                </div>
+
+                <div style={styles.presets}>
+                  {presetAmounts.map((val, i) => (
+                    <button
+                      key={val}
+                      onMouseEnter={() => setHoveredPreset(i)}
+                      onMouseLeave={() => setHoveredPreset(null)}
+                      onClick={() => setAmount(val.toString())}
+                      style={styles.presetBtn(parseFloat(amount) === val, hoveredPreset === i)}
+                    >
+                      ${val.toLocaleString()}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={styles.inputWrapper}>
+                  <span style={styles.currencySymbol}>$</span>
+                  <input
+                    type="number"
+                    placeholder="Enter amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    style={styles.input}
+                  />
+                </div>
+
+                <textarea
+                  placeholder="Add an optional note..."
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  style={styles.textarea}
+                />
+
+                <div style={styles.modalBtns}>
+                  <button style={styles.cancelBtn} onClick={() => setShowModal(false)}>
+                    Cancel
+                  </button>
+                  <button style={styles.confirmBtn} onClick={confirmSend} disabled={!amount}>
+                    Continue
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h4 style={{ marginBottom: "12px", color: "#1e3a8a" }}>Transaction Summary</h4>
+                <div style={styles.summaryCard}>
+                  <p><strong>Recipient:</strong> {selectedUser?.name}</p>
+                  <p><strong>Amount:</strong> ${parseFloat(amount).toLocaleString()}</p>
+                  <p><strong>Charge (1.5%):</strong> ${totalCharge.toLocaleString()}</p>
+                  <p><strong>Total Payable:</strong> ${totalPayable.toLocaleString()}</p>
+                  <p><strong>Wallet Remaining:</strong> ${(walletBalance - totalPayable).toLocaleString()}</p>
+                  {note && <p><strong>Note:</strong> {note}</p>}
+                </div>
+
+                <div style={styles.modalBtns}>
+                  <button style={styles.cancelBtn} onClick={() => setConfirming(false)}>
+                    Back
+                  </button>
+                  <button style={styles.confirmBtn} onClick={finalizeSend} disabled={loading}>
+                    {loading ? "Sending..." : "Confirm & Send"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div style={styles.toast}>
+          {toast.message}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SendMoney;

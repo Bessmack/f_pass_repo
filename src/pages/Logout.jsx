@@ -82,17 +82,11 @@ function Logout() {
         </div>
 
         <div className="logout-footer">
-          <div className="footer-links">
-            <a href="#help">Help Center</a>
-            <span className="divider">•</span>
-            <a href="#contact">Contact Support</a>
-            <span className="divider">•</span>
-            <a href="#privacy">Privacy Policy</a>
-          </div>
           <p className="footer-text">© 2025 MoneyTransfer. All rights reserved.</p>
         </div>
       </div>
     </div>
+    <Foot/>
     </>
   );
 }

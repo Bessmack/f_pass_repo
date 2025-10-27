@@ -1,3 +1,5 @@
+import './App.css'; // ✅ Must be above everything else
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
