@@ -32,17 +32,17 @@ const AdminWallets = () => {
     {
       title: 'Total Wallet Balance',
       value: '$13261.50',
-      icon: '💰'
+      icon: '💵'
     },
     {
       title: 'Average Balance',
       value: '$2652.30',
-      icon: '📊'
+      icon: '💱'
     },
     {
       title: 'Active Wallets',
       value: '4',
-      icon: '👥'
+      icon: '💳'
     }
   ];
 
