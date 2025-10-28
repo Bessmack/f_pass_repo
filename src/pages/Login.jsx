@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
 import Foot from '../components/Footer';
 
 function Login() {
@@ -11,31 +12,82 @@ function Login() {
   const [signInPassword, setSignInPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [userRole, setUserRole] = useState('user');
+  const [signInLoading, setSignInLoading] = useState(false);
+  const [signInError, setSignInError] = useState('');
 
   // Sign Up States
-  const [signUpName, setSignUpName] = useState('');
-  const [signUpEmail, setSignUpEmail] = useState('');
-  const [signUpPassword, setSignUpPassword] = useState('');
+  const [signUpData, setSignUpData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
+    phone: ''
+  });
+  const [signUpLoading, setSignUpLoading] = useState(false);
+  const [signUpError, setSignUpError] = useState('');
 
-  const handleSignIn = (e) => {
+  const handleSignIn = async (e) => {
     e.preventDefault();
-    console.log('Login attempt:', { email: signInEmail, password: signInPassword, rememberMe, userRole });
-    
-    if (userRole === 'admin') {
-      navigate('/admin/dashboard');
-    } else {
-      navigate('/user/dashboard');
+    setSignInLoading(true);
+    setSignInError('');
+
+    try {
+      const data = await authService.login(signInEmail, signInPassword);
+      
+      // Check if user role matches selected role
+      if (data.user.role !== userRole) {
+        setSignInError(`Please select the correct role. You are registered as ${data.user.role}.`);
+        authService.logout();
+        return;
+      }
+
+      // Navigate based on role
+      if (data.user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/user/dashboard');
+      }
+    } catch (error) {
+      setSignInError(error.error || 'Login failed. Please check your credentials.');
+    } finally {
+      setSignInLoading(false);
     }
   };
 
-  const handleSignUp = (e) => {
+  const handleSignUp = async (e) => {
     e.preventDefault();
-    console.log('Sign up attempt:', { 
-      name: signUpName, 
-      email: signUpEmail, 
-      password: signUpPassword 
+    setSignUpLoading(true);
+    setSignUpError('');
+
+    // Basic validation
+    if (signUpData.password.length < 6) {
+      setSignUpError('Password must be at least 6 characters long');
+      setSignUpLoading(false);
+      return;
+    }
+
+    try {
+      const userData = {
+        ...signUpData,
+        role: 'user' // Always register as user
+      };
+
+      await authService.register(userData);
+      
+      // Navigate to user dashboard after successful registration
+      navigate('/user/dashboard');
+    } catch (error) {
+      setSignUpError(error.error || 'Registration failed. Please try again.');
+    } finally {
+      setSignUpLoading(false);
+    }
+  };
+
+  const handleSignUpChange = (e) => {
+    setSignUpData({
+      ...signUpData,
+      [e.target.name]: e.target.value
     });
-    navigate('/user/dashboard');
   };
 
   return (
@@ -54,6 +106,21 @@ function Login() {
               <h1 className="auth-title">Welcome.</h1>
               <p className="auth-subtitle">Sign in to manage your transfers</p>
             </div>
+
+            {/* Error Message */}
+            {signInError && (
+              <div style={{
+                padding: '12px',
+                marginBottom: '16px',
+                backgroundColor: '#FEE2E2',
+                border: '1px solid #EF4444',
+                borderRadius: '8px',
+                color: '#DC2626',
+                fontSize: '14px'
+              }}>
+                {signInError}
+              </div>
+            )}
 
             {/* Role Selection */}
             <div className="auth-role-selector">
@@ -81,7 +148,7 @@ function Login() {
               </button>
             </div>
 
-            <div className="auth-form-wrapper">
+            <form onSubmit={handleSignIn} className="auth-form-wrapper">
               <div className="auth-form-group">
                 <label htmlFor="signin-email" className="auth-label">Email Address</label>
                 <div className="auth-input-container">
@@ -97,6 +164,7 @@ function Login() {
                     value={signInEmail}
                     onChange={(e) => setSignInEmail(e.target.value)}
                     required
+                    disabled={signInLoading}
                   />
                 </div>
               </div>
@@ -116,6 +184,7 @@ function Login() {
                     value={signInPassword}
                     onChange={(e) => setSignInPassword(e.target.value)}
                     required
+                    disabled={signInLoading}
                   />
                 </div>
               </div>
@@ -133,13 +202,17 @@ function Login() {
                 <a href="#" className="auth-forgot-link">Forgot Password?</a>
               </div>
 
-              <button type="button" className="auth-submit-button" onClick={handleSignIn}>
-                Sign In as {userRole === 'admin' ? 'Admin' : 'User'}
+              <button 
+                type="submit" 
+                className="auth-submit-button"
+                disabled={signInLoading}
+              >
+                {signInLoading ? 'Signing In...' : `Sign In as ${userRole === 'admin' ? 'Admin' : 'User'}`}
                 <svg className="auth-button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               </button>
-            </div>
+            </form>
 
             <div className="auth-card-footer">
               <p className="auth-footer-text">
@@ -170,9 +243,24 @@ function Login() {
               <p className="auth-subtitle">Join us to manage your transfers</p>
             </div>
 
-            <div className="auth-form-wrapper">
+            {/* Error Message */}
+            {signUpError && (
+              <div style={{
+                padding: '12px',
+                marginBottom: '16px',
+                backgroundColor: '#FEE2E2',
+                border: '1px solid #EF4444',
+                borderRadius: '8px',
+                color: '#DC2626',
+                fontSize: '14px'
+              }}>
+                {signUpError}
+              </div>
+            )}
+
+            <form onSubmit={handleSignUp} className="auth-form-wrapper">
               <div className="auth-form-group">
-                <label htmlFor="signup-name" className="auth-label">Full Name</label>
+                <label htmlFor="signup-firstname" className="auth-label">First Name</label>
                 <div className="auth-input-container">
                   <svg className="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -180,12 +268,35 @@ function Login() {
                   </svg>
                   <input
                     type="text"
-                    id="signup-name"
+                    id="signup-firstname"
+                    name="first_name"
                     className="auth-input"
-                    placeholder="Enter your full name"
-                    value={signUpName}
-                    onChange={(e) => setSignUpName(e.target.value)}
+                    placeholder="Enter your first name"
+                    value={signUpData.first_name}
+                    onChange={handleSignUpChange}
                     required
+                    disabled={signUpLoading}
+                  />
+                </div>
+              </div>
+
+              <div className="auth-form-group">
+                <label htmlFor="signup-lastname" className="auth-label">Last Name</label>
+                <div className="auth-input-container">
+                  <svg className="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <input
+                    type="text"
+                    id="signup-lastname"
+                    name="last_name"
+                    className="auth-input"
+                    placeholder="Enter your last name"
+                    value={signUpData.last_name}
+                    onChange={handleSignUpChange}
+                    required
+                    disabled={signUpLoading}
                   />
                 </div>
               </div>
@@ -200,11 +311,32 @@ function Login() {
                   <input
                     type="email"
                     id="signup-email"
+                    name="email"
                     className="auth-input"
                     placeholder="Enter your email"
-                    value={signUpEmail}
-                    onChange={(e) => setSignUpEmail(e.target.value)}
+                    value={signUpData.email}
+                    onChange={handleSignUpChange}
                     required
+                    disabled={signUpLoading}
+                  />
+                </div>
+              </div>
+
+              <div className="auth-form-group">
+                <label htmlFor="signup-phone" className="auth-label">Phone Number (Optional)</label>
+                <div className="auth-input-container">
+                  <svg className="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                  </svg>
+                  <input
+                    type="tel"
+                    id="signup-phone"
+                    name="phone"
+                    className="auth-input"
+                    placeholder="+1234567890"
+                    value={signUpData.phone}
+                    onChange={handleSignUpChange}
+                    disabled={signUpLoading}
                   />
                 </div>
               </div>
@@ -219,22 +351,29 @@ function Login() {
                   <input
                     type="password"
                     id="signup-password"
+                    name="password"
                     className="auth-input"
-                    placeholder="Enter your password"
-                    value={signUpPassword}
-                    onChange={(e) => setSignUpPassword(e.target.value)}
+                    placeholder="Create a strong password"
+                    value={signUpData.password}
+                    onChange={handleSignUpChange}
                     required
+                    disabled={signUpLoading}
+                    minLength="6"
                   />
                 </div>
               </div>
 
-              <button type="button" className="auth-submit-button" onClick={handleSignUp}>
-                Create Account
+              <button 
+                type="submit" 
+                className="auth-submit-button"
+                disabled={signUpLoading}
+              >
+                {signUpLoading ? 'Creating Account...' : 'Create Account'}
                 <svg className="auth-button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               </button>
-            </div>
+            </form>
 
             <div className="auth-card-footer">
               <p className="auth-footer-text">

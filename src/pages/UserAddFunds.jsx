@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { FaCreditCard, FaUniversity, FaMobileAlt, FaCheckCircle, FaArrowLeft } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { useWallet } from "../hooks/useWallet";
+import walletService from "../services/walletService";
 
 const AddFunds = () => {
+  const navigate = useNavigate();
+  const { wallet, addFunds: addFundsToWallet, refreshWallet } = useWallet();
+  
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -10,7 +15,7 @@ const AddFunds = () => {
   const [hoveredMethod, setHoveredMethod] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  const navigate = useNavigate();
+  const [error, setError] = useState("");
 
   const presetAmounts = [10, 25, 50, 100, 250, 500];
 
@@ -26,32 +31,59 @@ const AddFunds = () => {
     const val = e.target.value;
     if (val === "" || (/^\d*\.?\d*$/.test(val) && parseFloat(val) >= 0)) {
       setAmount(val);
+      setError("");
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!amount || !method) return;
+    if (!amount || !method) {
+      setError("Please enter amount and select a payment method");
+      return;
+    }
+    if (parseFloat(amount) < 1) {
+      setError("Minimum amount is $1.00");
+      return;
+    }
+    setError("");
     setShowModal(true);
   };
 
-  const confirmAddFunds = () => {
+  const confirmAddFunds = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError("");
+
+    try {
+      await addFundsToWallet(
+        parseFloat(amount),
+        `Added funds via ${method.name}`,
+        method.id
+      );
+
       setShowModal(false);
       setShowToast(true);
       setAmount("");
       setMethod(null);
-    }, 1500);
+
+      // Refresh wallet balance
+      await refreshWallet();
+    } catch (err) {
+      setError(err.error || "Failed to add funds. Please try again.");
+      setShowModal(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     if (showToast) {
-      const timer = setTimeout(() => setShowToast(false), 3500);
+      const timer = setTimeout(() => {
+        setShowToast(false);
+        navigate('/user/dashboard');
+      }, 2500);
       return () => clearTimeout(timer);
     }
-  }, [showToast]);
+  }, [showToast, navigate]);
 
   const numericAmount = parseFloat(amount) || 0;
   const fee = method ? (numericAmount * method.fee) / 100 : 0;
@@ -92,6 +124,23 @@ const AddFunds = () => {
     headerSubtext: {
       fontSize: "1rem",
       opacity: 0.9,
+    },
+    walletBalance: {
+      fontSize: "1rem",
+      opacity: 0.9,
+      marginTop: "5px",
+      fontWeight: 500,
+    },
+    errorMessage: {
+      width: "90%",
+      maxWidth: "440px",
+      padding: "12px 16px",
+      background: "#FEE2E2",
+      border: "1px solid #EF4444",
+      borderRadius: "8px",
+      color: "#DC2626",
+      fontSize: "14px",
+      marginTop: "10px",
     },
     card: {
       backdropFilter: "blur(8px)",
@@ -238,11 +287,18 @@ const AddFunds = () => {
           ? "none"
           : "0 4px 16px rgba(37,99,235,0.4)",
     },
-    footer: {
-      marginTop: "30px",
-      fontSize: "0.9rem",
-      color: "#475569",
-      textAlign: "center",
+    backBtn: {
+      background: "rgba(255,255,255,0.15)",
+      border: "none",
+      borderRadius: "20px",
+      padding: "10px 10px",
+      cursor: "pointer",
+      transition: "all 0.25s ease",
+    },
+    headerTitleWrapper: {
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
     },
     modalOverlay: {
       position: "fixed",
@@ -294,7 +350,7 @@ const AddFunds = () => {
       cursor: "pointer",
       transition: "all 0.3s ease",
     },
-      toast: {
+    toast: {
       position: "fixed",
       bottom: "20px",
       right: "20px",
@@ -309,66 +365,39 @@ const AddFunds = () => {
       animation: "fadeInOut 3s ease forwards",
       zIndex: 200,
     },
-    headerTitleWrapper: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    },
-
-    backBtn: {
-    background: "rgba(255,255,255,0.15)",
-    border: "none",
-    borderRadius: "20px",
-    padding: "10px 10px",
-    cursor: "pointer",
-    transition: "all 0.25s ease",
-    },
-    backBtnHover: {
-    background: "rgba(255,255,255,0.25)",
-    transform: "translateX(-2px)",
-    },
   };
-
-const styleSheet = document.styleSheets[0] || (() => {
-  const style = document.createElement("style");
-  document.head.appendChild(style);
-  return style.sheet;
-})();
-
-const fadeInOut = `
-  @keyframes fadeInOut {
-    0% { opacity: 0; transform: translateX(30px); }
-    10% { opacity: 1; transform: translateX(0); }
-    80% { opacity: 1; transform: translateX(0); }
-    100% { opacity: 0; transform: translateY(20px); }
-  }
-`;
-
-if (![...styleSheet.cssRules].some(r => r.name === "fadeInOut")) {
-  styleSheet.insertRule(fadeInOut, styleSheet.cssRules.length);
-}
 
   return (
     <div style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerContent}>
-            <div style={styles.headerTitleWrapper}>
-                <button
-                style={styles.backBtn}
-                onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.backBtnHover)}
-                onMouseLeave={(e) => Object.assign(e.currentTarget.style, styles.backBtn)}
-                onClick={() => navigate(-1)}
-                >
-                <FaArrowLeft size={16} color="white" />
-                </button>
-                <h2 style={styles.headerTitle}>Add Funds</h2>
-            </div>
+          <div style={styles.headerTitleWrapper}>
+            <button
+              style={styles.backBtn}
+              onMouseEnter={(e) => Object.assign(e.currentTarget.style, { background: "rgba(255,255,255,0.25)", transform: "translateX(-2px)" })}
+              onMouseLeave={(e) => Object.assign(e.currentTarget.style, styles.backBtn)}
+              onClick={() => navigate(-1)}
+            >
+              <FaArrowLeft size={16} color="white" />
+            </button>
+            <h2 style={styles.headerTitle}>Add Funds</h2>
+          </div>
+          <p style={styles.walletBalance}>
+            Wallet Balance: {wallet ? walletService.formatCurrency(wallet.balance) : '$0.00'}
+          </p>
           <p style={styles.headerSubtext}>
             Select or enter the amount you want to add, then choose your payment method.
           </p>
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div style={styles.errorMessage}>
+          {error}
+        </div>
+      )}
 
       {/* Preset & Input */}
       <div style={styles.card}>
@@ -443,7 +472,7 @@ if (![...styleSheet.cssRules].some(r => r.name === "fadeInOut")) {
       >
         {loading
           ? "Processing..."
-          : `Add $${amount || "0"} ${method ? `via ${method.name}` : ""}`}
+          : `Add ${amount || "0"} ${method ? `via ${method.name}` : ""}`}
       </button>
 
       {/* Confirmation Modal */}
@@ -459,7 +488,7 @@ if (![...styleSheet.cssRules].some(r => r.name === "fadeInOut")) {
               <button style={styles.cancelBtn} onClick={() => setShowModal(false)}>
                 Cancel
               </button>
-              <button style={styles.confirmBtn} onClick={confirmAddFunds}>
+              <button style={styles.confirmBtn} onClick={confirmAddFunds} disabled={loading}>
                 {loading ? "Processing..." : "Confirm"}
               </button>
             </div>
@@ -471,15 +500,9 @@ if (![...styleSheet.cssRules].some(r => r.name === "fadeInOut")) {
       {showToast && (
         <div style={styles.toast}>
           <FaCheckCircle size={22} color="white" />
-          <span>Successfully added funds!</span>
+          <span>Successfully added ${numericAmount.toFixed(2)}!</span>
         </div>
       )}
-
-      {/* Footer */}
-      <div style={styles.footer}>
-        🔒 Secure payment processing &nbsp; | &nbsp; ⚡ Instant fund availability &nbsp; | &nbsp;
-        💰 Industry-leading low fees
-      </div>
     </div>
   );
 };
