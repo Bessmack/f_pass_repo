@@ -10,20 +10,17 @@ import Profile from './pages/Profile';
 import UserHomePage from './pages/UserHomePage';
 import UserAddFunds from './pages/UserAddFunds';
 import UserSendMoney from './pages/UserSendMoney';
-import UserHistory from './pages/UserHistory';// 👈 ADD THIS TOO
-import UserWallet from './pages/UserWallet'; // 👈 ADD THIS LINE
+import UserHistory from './pages/UserHistory';
+import UserWallet from './pages/UserWallet';
 import UserContacts from './pages/UserContacts';
 import AddBeneficiary from './pages/AddBeneficiary';
 import UserProfile from './pages/UserProfile';
 
-import useAuth from './hooks/useAuth';
-import { AuthProvider } from './context/AuthContext';
-
+import { AuthProvider } from './context/AuthContext';  // ✅ Import AuthProvider
 
 function App() {
-
   return (
-    <>
+    <AuthProvider>  {/* ✅ Wrap everything with AuthProvider */}
       <Router>
         <Routes>
           <Route path="/" element={<Login />} />
@@ -44,8 +41,9 @@ function App() {
           <Route path="/user/profile" element={<UserProfile />} />
         </Routes>
       </Router>
-    </>
-  )
+    </AuthProvider> 
+    /* ✅ Close AuthProvider */
+  );
 }
 
 export default App;

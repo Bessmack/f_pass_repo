@@ -12,6 +12,13 @@ export const walletService = {
       throw error.response?.data || { error: 'Failed to get wallet' };
     }
   },
+  /**
+   * Get user's transaction information
+   */
+  getTransactions: async () => {
+    const response = await api.get("/transactions");
+    return response.data.transactions;
+  },
 
   /**
    * Add funds to wallet

@@ -12,7 +12,7 @@ function UserHomePage() {
   const [monthlyStats, setMonthlyStats] = useState({ sent: 0, received: 0 });
 
   useEffect(() => {
-    if (transactions.length > 0) {
+    if (Array.isArray(transactions) && transactions.length > 0) {
       // Calculate this month's stats
       const now = new Date();
       const thisMonth = transactions.filter(t => {

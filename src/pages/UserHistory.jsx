@@ -1,294 +1,212 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, ArrowDownToLine, Download } from "lucide-react";
 
 export default function UserHistory() {
   const [activeTab, setActiveTab] = useState("all");
+  const [transactions, setTransactions] = useState([]);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Dummy transaction data with additional details
-  const transactions = [
-    { 
-      id: 1, 
-      type: "sent", 
-      name: "Sarah Johnson", 
-      amount: -150.00, 
-      date: "2025-10-15", 
-      time: "14:30",
-      status: "Completed",
-      transactionId: "TXN1234567",
-      fee: 0.75
-    },
-    { 
-      id: 2, 
-      type: "received", 
-      name: "Add Funds", 
-      amount: 500.00, 
-      date: "2025-10-14", 
-      time: "10:15",
-      status: "Completed",
-      transactionId: "TXN2234567",
-      fee: 0.00
-    },
-    { 
-      id: 3, 
-      type: "sent", 
-      name: "Michael Chen", 
-      amount: -75.00, 
-      date: "2025-10-13", 
-      time: "16:45",
-      status: "Completed",
-      transactionId: "TXN3234567",
-      fee: 0.38
-    },
-    { 
-      id: 4, 
-      type: "sent", 
-      name: "Emily Davis", 
-      amount: -200.00, 
-      date: "2025-10-12", 
-      time: "09:20",
-      status: "Completed",
-      transactionId: "TXN4234567",
-      fee: 1.00
-    },
-    { 
-      id: 5, 
-      type: "received", 
-      name: "Add Funds", 
-      amount: 300.00, 
-      date: "2025-10-11", 
-      time: "11:00",
-      status: "Completed",
-      transactionId: "TXN5234567",
-      fee: 0.00
-    },
-    { 
-      id: 6, 
-      type: "sent", 
-      name: "David Wilson", 
-      amount: -125.00, 
-      date: "2025-10-10", 
-      time: "15:30",
-      status: "Completed",
-      transactionId: "TXN6234567",
-      fee: 0.63
-    },
-    { 
-      id: 7, 
-      type: "received", 
-      name: "Add Funds", 
-      amount: 1000.00, 
-      date: "2025-10-09", 
-      time: "08:45",
-      status: "Completed",
-      transactionId: "TXN7234567",
-      fee: 0.00
-    },
-    { 
-      id: 8, 
-      type: "sent", 
-      name: "Lisa Anderson", 
-      amount: -90.00, 
-      date: "2025-10-08", 
-      time: "13:15",
-      status: "Completed",
-      transactionId: "TXN8234567",
-      fee: 0.45
-    },
-  ];
+  const token = localStorage.getItem("access_token");
 
-  // Calculate totals
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/transactions", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          setTransactions(data.transactions);
+        } else {
+          console.error("Failed to load transactions:", data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching transactions:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, [token]);
+
+  // ✅ Compute totals
   const totalSent = transactions
-    .filter(t => t.type === "sent")
-    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    .filter((t) => t.sender_id)
+    .reduce((sum, t) => sum + (t.amount + (t.fee || 0)), 0);
 
   const totalReceived = transactions
-    .filter(t => t.type === "received")
-    .reduce((sum, t) => sum + t.amount, 0);
+    .filter((t) => t.receiver_id)
+    .reduce((sum, t) => sum + (t.amount || 0), 0);
 
-  // Filter transactions based on active tab
-  const filteredTransactions = transactions.filter(t => {
-    if (activeTab === "all") return true;
-    if (activeTab === "sent") return t.type === "sent";
-    if (activeTab === "received") return t.type === "received";
+  // ✅ Filter transactions
+  const filteredTransactions = transactions.filter((t) => {
+    if (activeTab === "sent") return t.sender_id;
+    if (activeTab === "received") return t.receiver_id;
     return true;
   });
 
-  const handleTransactionClick = (transaction) => {
-    setSelectedTransaction(transaction);
-  };
-
-  const closeModal = () => {
-    setSelectedTransaction(null);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-blue-600">
+        <p className="text-white text-lg">Loading transactions...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-blue-600 flex flex-col">
-      {/* Header - Fixed */}
+      {/* Header */}
       <div className="px-4 py-6">
         <div className="flex items-center gap-3 mb-6">
-          <button 
+          <button
             onClick={() => navigate(-1)}
             className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center hover:bg-blue-800 transition"
           >
             <ArrowLeft size={20} className="text-white" />
           </button>
-          <h1 className="text-2xl font-semibold text-white">Transactions</h1>
+          <h1 className="text-2xl font-semibold text-white">Transaction History</h1>
         </div>
 
-        {/* Transaction Summary Cards */}
+        {/* Summary */}
         <div className="flex gap-3 mb-4">
           <div className="flex-1 bg-blue-500 rounded-2xl p-5">
             <p className="text-blue-100 text-sm mb-1">Total Sent</p>
-            <p className="text-white font-bold text-2xl">${totalSent.toFixed(2)}</p>
+            <p className="text-white font-bold text-2xl">KES {totalSent.toFixed(2)}</p>
           </div>
           <div className="flex-1 bg-blue-500 rounded-2xl p-5">
             <p className="text-blue-100 text-sm mb-1">Total Received</p>
-            <p className="text-white font-bold text-2xl">${totalReceived.toFixed(2)}</p>
+            <p className="text-white font-bold text-2xl">KES {totalReceived.toFixed(2)}</p>
           </div>
         </div>
       </div>
 
-      {/* Scrollable Content Section */}
+      {/* Transactions */}
       <div className="flex-1 bg-white rounded-t-3xl px-4 py-6 overflow-y-auto">
-        {/* Filter Tabs */}
+        {/* Tabs */}
         <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setActiveTab("all")}
-            className={`px-6 py-2 rounded-full font-medium transition ${
-              activeTab === "all"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setActiveTab("sent")}
-            className={`px-6 py-2 rounded-full font-medium transition ${
-              activeTab === "sent"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            Sent
-          </button>
-          <button
-            onClick={() => setActiveTab("received")}
-            className={`px-6 py-2 rounded-full font-medium transition ${
-              activeTab === "received"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            Received
-          </button>
+          {["all", "sent", "received"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-6 py-2 rounded-full font-medium transition ${
+                activeTab === tab
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
         </div>
 
-        {/* Transaction List */}
+        {/* Transaction Cards */}
         <div className="space-y-3 pb-6">
           {filteredTransactions.length > 0 ? (
             filteredTransactions.map((transaction) => (
               <div
-                key={transaction.id}
-                onClick={() => handleTransactionClick(transaction)}
+                key={transaction.transaction_id}
+                onClick={() => setSelectedTransaction(transaction)}
                 className="bg-gray-50 rounded-2xl p-4 flex items-center gap-4 hover:bg-gray-100 transition cursor-pointer"
               >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                  transaction.type === "sent" ? "bg-red-100" : "bg-green-100"
-                }`}>
-                  {transaction.type === "sent" ? (
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    transaction.sender_id ? "bg-red-100" : "bg-green-100"
+                  }`}
+                >
+                  {transaction.sender_id ? (
                     <Send size={20} className="text-red-600" />
                   ) : (
                     <ArrowDownToLine size={20} className="text-green-600" />
                   )}
                 </div>
+
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900">{transaction.name}</p>
-                  <p className="text-sm text-gray-500">{transaction.date} at {transaction.time}</p>
+                  <p className="font-semibold text-gray-900">
+                    {transaction.sender_id ? `To: ${transaction.receiver_id}` : `From: ${transaction.sender_id}`}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {new Date(transaction.created_at).toLocaleString()}
+                  </p>
                 </div>
+
                 <div className="text-right">
-                  <p className={`font-bold text-lg ${
-                    transaction.type === "sent" ? "text-red-600" : "text-green-600"
-                  }`}>
-                    {transaction.type === "sent" ? "-" : "+"}${Math.abs(transaction.amount).toFixed(2)}
+                  <p
+                    className={`font-bold text-lg ${
+                      transaction.sender_id ? "text-red-600" : "text-green-600"
+                    }`}
+                  >
+                    {transaction.sender_id ? "-" : "+"}KES {Math.abs(transaction.amount).toFixed(2)}
                   </p>
                   <p className="text-xs text-gray-500">{transaction.status}</p>
                 </div>
               </div>
             ))
           ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No transactions found</p>
-            </div>
+            <div className="text-center py-12 text-gray-500">No transactions found</div>
           )}
         </div>
       </div>
 
-      {/* Transaction Detail Modal */}
+      {/* Transaction Modal */}
       {selectedTransaction && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 relative">
-            {/* Drag Handle */}
-            <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"></div>
-
-            {/* Icon and Amount */}
-            <div className="text-center mb-8">
-              <div className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center ${
-                selectedTransaction.type === "sent" ? "bg-red-100" : "bg-green-100"
-              }`}>
-                {selectedTransaction.type === "sent" ? (
+          <div className="bg-white rounded-3xl max-w-md w-full p-6">
+            <div className="text-center mb-6">
+              <div
+                className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center ${
+                  selectedTransaction.sender_id ? "bg-red-100" : "bg-green-100"
+                }`}
+              >
+                {selectedTransaction.sender_id ? (
                   <Send size={28} className="text-red-600" />
                 ) : (
                   <ArrowDownToLine size={28} className="text-green-600" />
                 )}
               </div>
-              <p className={`text-3xl font-bold mb-2 ${
-                selectedTransaction.type === "sent" ? "text-red-600" : "text-green-600"
-              }`}>
-                {selectedTransaction.type === "sent" ? "-" : "+"}${Math.abs(selectedTransaction.amount).toFixed(2)}
+              <p
+                className={`text-3xl font-bold mb-2 ${
+                  selectedTransaction.sender_id ? "text-red-600" : "text-green-600"
+                }`}
+              >
+                {selectedTransaction.sender_id ? "-" : "+"}KES{" "}
+                {Math.abs(selectedTransaction.amount).toFixed(2)}
               </p>
-              <p className="text-gray-500">{selectedTransaction.status}</p>
+              <p className="text-gray-500 capitalize">{selectedTransaction.status}</p>
             </div>
 
-            {/* Transaction Details */}
-            <div className="space-y-4 mb-6">
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-600">Type</span>
-                <span className="font-semibold text-gray-900 capitalize">{selectedTransaction.type}</span>
+            <div className="space-y-3 mb-6 text-sm text-gray-700">
+              <div className="flex justify-between border-b py-2">
+                <span>Transaction ID</span>
+                <span className="font-medium">{selectedTransaction.transaction_id}</span>
               </div>
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-600">{selectedTransaction.type === "sent" ? "To" : "From"}</span>
-                <span className="font-semibold text-gray-900">{selectedTransaction.name}</span>
+              <div className="flex justify-between border-b py-2">
+                <span>Type</span>
+                <span className="font-medium capitalize">{selectedTransaction.type}</span>
               </div>
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-600">Date</span>
-                <span className="font-semibold text-gray-900">{selectedTransaction.date}</span>
+              <div className="flex justify-between border-b py-2">
+                <span>Fee</span>
+                <span>KES {selectedTransaction.fee?.toFixed(2) || "0.00"}</span>
               </div>
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-600">Time</span>
-                <span className="font-semibold text-gray-900">{selectedTransaction.time}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-600">Transaction Fee</span>
-                <span className="font-semibold text-gray-900">${selectedTransaction.fee.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between py-3">
-                <span className="text-gray-600">Transaction ID</span>
-                <span className="font-semibold text-gray-900">{selectedTransaction.transactionId}</span>
+              <div className="flex justify-between border-b py-2">
+                <span>Note</span>
+                <span>{selectedTransaction.note || "None"}</span>
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex gap-3">
-              <button className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2">
+              <button
+                className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2"
+              >
                 <Download size={18} />
                 Receipt
               </button>
-              <button 
-                onClick={closeModal}
+              <button
+                onClick={() => setSelectedTransaction(null)}
                 className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition"
               >
                 Close
