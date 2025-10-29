@@ -60,7 +60,7 @@ function Login() {
     setSignUpError('');
 
     // Basic validation
-    if (signUpData.password.length < 6) {
+    if (signUpData.password.length < 8) {
       setSignUpError('Password must be at least 6 characters long');
       setSignUpLoading(false);
       return;

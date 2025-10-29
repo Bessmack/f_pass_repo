@@ -16,6 +16,9 @@ import UserContacts from './pages/UserContacts';
 import AddBeneficiary from './pages/AddBeneficiary';
 import UserProfile from './pages/UserProfile';
 
+import useAuth from './hooks/useAuth';
+import { AuthProvider } from './context/AuthContext';
+
 
 function App() {
 
